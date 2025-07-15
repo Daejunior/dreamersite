@@ -731,35 +731,28 @@
             });
         });
     
+  
   document.getElementById('gate-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // 1. Get all answers
+
     const lie = e.target.querySelector('textarea[name="Lie"]').value;
     const belief = e.target.querySelector('textarea[name="Outdated Belief"]').value;
     const truthPreference = e.target.querySelector('input[name="Truth Preference"]:checked')?.value || 'Not selected';
 
-    // 2. Send to Telegram (with YOUR actual token/chat ID)
     try {
-      await fetch(`https://api.telegram.org/bot8059769451:AAF0UxxgipMAet9XR2WK31JsMZ9maRZoX54/sendMessage`, {
+      const res = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: 771936786, // Your confirmed chat ID
-          text: `📜 *Sacred Council Submission*\n\n` +
-                `🔥 *Lie*:\n${lie}\n\n` +
-                `💡 *Outdated Belief*:\n${belief}\n\n` +
-                `⚖️ *Truth Choice*: ${truthPreference}`,
-          parse_mode: 'Markdown'
-        })
+        body: JSON.stringify({ lie, belief, truthPreference })
       });
 
-      // 3. Proceed to next page
-      portalTransition('page-initiation');
-      
-    } catch (error) {
-      console.log('Success! Answers:', { lie, belief, truthPreference }); // Fallback log
-      portalTransition('page-initiation'); // Still proceed
+      if (res.ok) {
+        portalTransition('page-initiation');
+      } else {
+        alert('Error sending data');
+      }
+    } catch (err) {
+      console.error('Failed to send:', err);
     }
   });
     </script>
