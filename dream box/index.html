@@ -730,51 +730,38 @@
                 }
             });
         });
-      document.getElementById('gate-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  // 1. Get all form values
-  const form = e.target;
-  const lie = form.querySelector('textarea[name="Lie"]').value;
-  const belief = form.querySelector('textarea[name="Outdated Belief"]').value;
-  const truthPreference = form.querySelector('input[name="Truth Preference"]:checked')?.value || 'Not selected';
-
-  // 2. Prepare data for multiple services
-  const payload = {
-    lie,
-    belief,
-    truthPreference,
-    _subject: 'Sacred Council Submission - ' + new Date().toLocaleString(),
-    _template: 'table'
-  };
-
-  try {
-    // 3. Try FormSubmit first
-    const formSubmit = await fetch('https://formsubmit.co/ajax/davidajewole09@gmail.com', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    // 4. Telegram fallback (recommended)
-    await fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage?chat_id=YOUR_CHAT_ID&text=${encodeURIComponent(
-      `📜 New Submission:\n\n` +
-      `🔮 Lie: ${lie}\n\n` +
-      `💭 Outdated Belief: ${belief}\n\n` +
-      `⚖️ Truth Preference: ${truthPreference}`
-    )}`);
-
-    // 5. Console backup
-    console.log('Submission Data:', payload);
     
-    // 6. Proceed to next page
-    portalTransition('page-initiation');
+  document.getElementById('gate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // 1. Get all answers
+    const lie = e.target.querySelector('textarea[name="Lie"]').value;
+    const belief = e.target.querySelector('textarea[name="Outdated Belief"]').value;
+    const truthPreference = e.target.querySelector('input[name="Truth Preference"]:checked')?.value || 'Not selected';
 
-  } catch (error) {
-    console.error('Full Error:', error);
-    alert('Submission recorded! If email is missing, check Telegram or console.');
-  }
-});
+    // 2. Send to Telegram (with YOUR actual token/chat ID)
+    try {
+      await fetch(`https://api.telegram.org/bot8059769451:AAF0UxxgipMAet9XR2WK31JsMZ9maRZoX54/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: 771936786, // Your confirmed chat ID
+          text: `📜 *Sacred Council Submission*\n\n` +
+                `🔥 *Lie*:\n${lie}\n\n` +
+                `💡 *Outdated Belief*:\n${belief}\n\n` +
+                `⚖️ *Truth Choice*: ${truthPreference}`,
+          parse_mode: 'Markdown'
+        })
+      });
+
+      // 3. Proceed to next page
+      portalTransition('page-initiation');
+      
+    } catch (error) {
+      console.log('Success! Answers:', { lie, belief, truthPreference }); // Fallback log
+      portalTransition('page-initiation'); // Still proceed
+    }
+  });
     </script>
 </body>
 </html>
