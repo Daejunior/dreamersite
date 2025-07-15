@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Dreamers – A Journey into Thought Leadership & Awakening</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sacred: {
+                            gold: '#d4af37',
+                            dark: '#121212',  // Darker background
+                            light: '#f8f4e6',
+                            crimson: '#8b0000',
+                            night: '#0a0a0a', // Very dark background
+                            overlay: 'rgba(10,10,10,0.85)' // Dark overlay
+                        },
+                    },
+                    fontFamily: {
+                        serif: ['Cormorant Garamond', 'serif'],
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                    animation: {
+                        'flicker': 'flicker 8s infinite alternate',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 8s infinite',
+                        'text-glow': 'text-glow 4s ease-in-out infinite alternate',
+                        'gate-pulse': 'gate-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        flicker: {
+                            '0%, 19%, 21%, 23%, 25%, 54%, 56%, 100%': {
+                                opacity: '1',
+                                filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.7))'
+                            },
+                            '20%, 24%, 55%': {
+                                opacity: '0.8',
+                                filter: 'drop-shadow(0 0 2px rgba(212, 175, 55, 0.3))'
+                            }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' }
+                        },
+                        'text-glow': {
+                            '0%': { 'text-shadow': '0 0 8px rgba(212, 175, 55, 0.3)' },
+                            '100%': { 'text-shadow': '0 0 16px rgba(212, 175, 55, 0.8)' }
+                        },
+                        'gate-pulse': {
+                            '0%, 100%': { 'box-shadow': '0 0 0 0 rgba(212, 175, 55, 0.7)' },
+                            '50%': { 'box-shadow': '0 0 0 15px rgba(212, 175, 55, 0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
+        
+        body {
+            @apply bg-sacred-night text-sacred-light font-sans overflow-x-hidden;
+        }
+        
+        .page {
+            @apply fixed inset-0 overflow-hidden;
+            display: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        .sacred-border {
+            position: relative;
+        }
+        
+        .sacred-border::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(139, 0, 0, 0.3)) border-box;
+            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        
+        .mirror-room {
+            perspective: 1000px;
+        }
+        
+        .mirror-tile {
+            background: linear-gradient(135deg, rgba(248, 244, 230, 0.1), rgba(212, 175, 55, 0.2));
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            transition: all 0.5s ease;
+        }
+        
+        .mirror-tile:hover {
+            transform: translateZ(20px);
+            background: linear-gradient(135deg, rgba(248, 244, 230, 0.3), rgba(212, 175, 55, 0.4));
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+        
+        .gate-circle {
+            position: absolute;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 50%;
+            animation: gate-pulse 4s infinite;
+        }
+        
+        .text-reveal {
+            clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%);
+            animation: text-reveal 1.5s forwards;
+        }
+        
+        /* 3D Canvas */
+        .threejs-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.5; /* Reduced opacity for better text visibility */
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 10;
+            background-color: rgba(10, 10, 10, 0.7); /* Dark semi-transparent overlay */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes text-reveal {
+            to {
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+            }
+        }
+        
+        /* Text contrast enhancements */
+        .text-sacred-light {
+            color: #f8f4e6;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        .text-sacred-gold {
+            color: #d4af37;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        /* Content containers */
+        .content-container {
+            @apply bg-sacred-dark/90 p-8 rounded-lg backdrop-blur-sm;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Home Page with Rotating Earth -->
+    <div id="page-home" class="page active">
+        <div id="earth-container" class="threejs-container"></div>
+        
+        <div class="content-overlay">
+            <div class="content-container text-center">
+                <h1 class="text-5xl md:text-7xl font-serif text-sacred-gold mb-8 leading-tight animate-text-glow text-reveal">
+                    Hello Dreamers...
+                </h1>
+                <p class="text-xl md:text-2xl font-serif text-sacred-light mb-12 max-w-3xl mx-auto text-reveal" style="animation-delay: 0.3s">
+                    The ones who watched, who questioned, who waited. The ones who always knew they were not like the rest.
+                </p>
+                <div class="mt-16 text-reveal" style="animation-delay: 0.6s">
+                    <button onclick="nextPage('page-philosophy')" class="relative sacred-border px-12 py-4 rounded-full text-sacred-gold font-serif text-lg group overflow-hidden transition-all duration-500">
+                        <span class="relative z-10">Begin Your Process</span>
+                        <span class="absolute inset-0 bg-gradient-to-r from-sacred-gold/10 to-sacred-crimson/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Philosophy Page with Shattered Glass -->
+    <div id="page-philosophy" class="page">
+        <div id="glass-container" class="threejs-container"></div>
+        
+        <div class="content-overlay">
+            <div class="content-container">
+                <div class="grid md:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <h2 class="text-4xl md:text-5xl font-serif text-sacred-gold mb-8 text-reveal">
+                            The Thought Rebellion
+                        </h2>
+                        <p class="text-2xl font-serif text-sacred-light mb-12 leading-relaxed text-reveal" style="animation-delay: 0.3s">
+                            You are not here to follow. You are here to remember what the world forgot.
+                        </p>
+                        
+                        <div class="space-y-8">
+                            <div class="flex items-start text-reveal" style="animation-delay: 0.6s">
+                                <div class="mr-4 mt-1 text-sacred-gold text-xl">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <p class="text-lg font-serif text-sacred-light">
+                                    You were designed to be a mirror to society, and a hammer to its illusions.
+                                </p>
+                            </div>
+                            <div class="flex items-start text-reveal" style="animation-delay: 0.9s">
+                                <div class="mr-4 mt-1 text-sacred-gold text-xl">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <p class="text-lg font-serif text-sacred-light">
+                                    You were not made to fit in, but to redefine what makes sense.
+                                </p>
+                            </div>
+                            <div class="flex items-start text-reveal" style="animation-delay: 1.2s">
+                                <div class="mr-4 mt-1 text-sacred-gold text-xl">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <p class="text-lg font-serif text-sacred-light">
+                                    You are not a student. You are a rebuilder.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-16 text-reveal" style="animation-delay: 1.5s">
+                            <button onclick="nextPage('page-story')" class="relative sacred-border px-12 py-4 rounded-full text-sacred-gold font-serif text-lg group overflow-hidden transition-all duration-500">
+                                <span class="relative z-10">I Am Ready</span>
+                                <span class="absolute inset-0 bg-gradient-to-r from-sacred-gold/10 to-sacred-crimson/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="relative h-96">
+                        <!-- Space for 3D glass animation -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Story Page with 3D Candle -->
+    <div id="page-story" class="page">
+        <div id="candle-container" class="threejs-container"></div>
+        
+        <div class="content-overlay">
+            <div class="content-container">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl md:text-5xl font-serif text-sacred-gold mb-8 text-reveal">
+                        The Firekeeper's Tale
+                    </h2>
+                    <div class="w-24 h-1 bg-sacred-gold mx-auto mb-12 text-reveal" style="animation-delay: 0.3s"></div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="text-reveal" style="animation-delay: 0.6s">
+                        <div class="sacred-border p-8 rounded-lg bg-sacred-night/70">
+                            <p class="font-serif text-sacred-light mb-6 leading-relaxed">
+                                This is my story
+                            </p>
+                            <p class="font-serif text-sacred-light leading-relaxed">
+
+                        I was raised in a world where religion wasn’t a journey, it was a lifestyle.
+                        Where faith was a rulebook, not a conversation. Where culture was a cage disguised as tradition, And obedience was the only way to belong. From childhood, I learned to bow to unseen gatekeepers, To swallow questions, and to silence insight. Because asking “Why?” was dangerous. Because thinking deeply was seen as rebellion.
+                        Because challenging norms meant risking exile. I wore the mask of conformity.
+                        I danced to the tune of rituals I barely understood. I prayed the prayers I didn’t believe, And I nodded at truths that never felt like mine. But inside, something was breaking. A quiet whisper that wouldn’t be silenced. A restless hunger for meaning beyond the rules. A silent scream to understand what was real. Slowly, I began to leave everything alone. Not out of anger or despair,
+                        But out of a desperate need for truth. I stopped forcing meaning on empty traditions. I stopped kneeling at altars built on fear. And then… there was a moment, A moment when the veil thinned. When the curtain of consensus reality pulled back just enough. And I saw the world not as everyone else did,
+                        But as it really was beneath the surface. I saw the rehearsed smiles and silent fears. I saw the chains dressed in silk, And the weight beneath worship. And in that moment, I was utterly alone. Not just alone in the world,
+                        But alone inside my own soul. Because to see what others couldn’t,
+                        To hear what others refused to hear, Was to carry a fire no one else could feel. That fire was loneliness. But it was also warmth. A warmth born from knowing I was waking up, Even if it meant walking through cold rooms
+                        Full of familiar faces who didn’t understand. That fire didn’t ask me to belong. It asked me to be brave.  To stay awake.To keep the questions burning even when answers were silent. That fire is why I’m here now,
+                        Still walking.
+                        Still seeing.
+                        Still inviting others to step through the veil with me.
+
+                        Because the loneliness of awakening is real, But the light it brings…
+                        That is worth everything.
+
+                        </div>
+                    </div>
+                    
+                    <div class="text-reveal" style="animation-delay: 0.9s">
+                        <div class="sacred-border p-8 rounded-lg bg-sacred-night/70 h-full">
+                            <p class="text-2xl font-serif text-sacred-gold mb-6 italic">
+                                "But this is not just my story. This is yours too."
+                            </p>
+                            <p class="font-serif text-sacred-light mb-6 leading-relaxed">
+                                That voice you've buried under survival? We're here to dig it out. The knowing you've dismissed as imagination? We're here to validate it.
+                            </p>
+                            <p class="font-serif text-sacred-light leading-relaxed">
+                                You've walked this path alone long enough. Now it's time to walk with those who see in the same spectrum of light and shadow as you do.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-20 text-center text-reveal" style="animation-delay: 1.2s">
+                    <button onclick="nextPage('page-gate')" class="relative sacred-border px-12 py-4 rounded-full text-sacred-gold font-serif text-lg group overflow-hidden transition-all duration-500">
+                        <span class="relative z-10">I See Myself In This</span>
+                        <span class="absolute inset-0 bg-gradient-to-r from-sacred-gold/10 to-sacred-crimson/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Psychological Gate -->
+    <div id="page-gate" class="page">
+        <div class="content-overlay bg-gradient-to-br from-sacred-night/90 to-sacred-crimson/10">
+            <div class="content-container">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-serif text-sacred-gold mb-8 text-reveal">
+                        The Inner Chamber
+                    </h2>
+                    <p class="text-xl font-serif text-sacred-light max-w-2xl mx-auto text-reveal" style="animation-delay: 0.3s">
+                        Only those who dare to look within can truly lead beyond.
+                    </p>
+                </div>
+                
+                <div class="sacred-border p-8 md:p-12 rounded-lg bg-sacred-night/70 text-reveal" style="animation-delay: 0.6s">
+                    <form id="gate-form" class="space-y-12">
+                        <div>
+                            <label class="block font-serif text-sacred-gold mb-4 text-lg">
+                                What is the lie you told yourself to stay sane?
+                            </label>
+                            <textarea required class="w-full bg-sacred-night/80 border border-sacred-gold/30 rounded-lg px-4 py-3 font-serif text-sacred-light focus:outline-none focus:ring-1 focus:ring-sacred-gold/50 focus:border-sacred-gold/50 transition-all duration-300 min-h-[120px]"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-serif text-sacred-gold mb-4 text-lg">
+                                Which belief do you secretly know is outdated, but hard to release?
+                            </label>
+                            <textarea required class="w-full bg-sacred-night/80 border border-sacred-gold/30 rounded-lg px-4 py-3 font-serif text-sacred-light focus:outline-none focus:ring-1 focus:ring-sacred-gold/50 focus:border-sacred-gold/50 transition-all duration-300 min-h-[120px]"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-serif text-sacred-gold mb-4 text-lg">
+                                Would you rather be feared for your truth or praised for silence?
+                            </label>
+                            <div class="flex flex-col space-y-4">
+                                <label class="inline-flex items-center">
+                                    <input required type="radio" class="form-radio text-sacred-gold bg-sacred-night border-sacred-gold/50 focus:ring-sacred-gold" name="truth_or_silence" value="feared">
+                                    <span class="ml-3 font-serif text-sacred-light">Feared for my truth</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input required type="radio" class="form-radio text-sacred-gold bg-sacred-night border-sacred-gold/50 focus:ring-sacred-gold" name="truth_or_silence" value="praised">
+                                    <span class="ml-3 font-serif text-sacred-light">Praised for silence</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input required type="radio" class="form-radio text-sacred-gold bg-sacred-night border-sacred-gold/50 focus:ring-sacred-gold" name="truth_or_silence" value="neither">
+                                    <span class="ml-3 font-serif text-sacred-light">Neither, I reject this dichotomy</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-8">
+                            <button type="submit" class="relative sacred-border w-full py-4 rounded-full text-sacred-gold font-serif text-lg group overflow-hidden transition-all duration-500">
+                                <span class="relative z-10">Submit & Enter the Mirror Room</span>
+                                <span class="absolute inset-0 bg-gradient-to-r from-sacred-gold/10 to-sacred-crimson/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Animated gate circles -->
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 gate-circle" style="animation-delay: 0.2s"></div>
+        <div class="absolute top-1/3 right-1/4 w-48 h-48 gate-circle" style="animation-delay: 0.4s"></div>
+        <div class="absolute bottom-1/4 left-1/3 w-56 h-56 gate-circle" style="animation-delay: 0.6s"></div>
+        <div class="absolute bottom-1/3 right-1/3 w-40 h-40 gate-circle" style="animation-delay: 0.8s"></div>
+    </div>
+
+    <!-- Initiation Page with Mirror Particles -->
+    <div id="page-initiation" class="page mirror-room">
+        <div id="mirror-container" class="threejs-container"></div>
+        
+        <div class="content-overlay">
+            <div class="content-container text-center">
+                <div>
+                    <h2 class="text-5xl md:text-7xl font-serif text-sacred-gold mb-8 leading-tight animate-text-glow text-reveal">
+                        The Mirror Room
+                    </h2>
+                    <p class="text-2xl md:text-3xl font-serif text-sacred-light mb-12 max-w-3xl mx-auto leading-relaxed text-reveal" style="animation-delay: 0.3s">
+                        You have been seen. You have been heard. Now, you will be remembered.
+                    </p>
+                    <p class="text-xl font-serif text-sacred-light mb-16 max-w-2xl mx-auto italic text-reveal" style="animation-delay: 0.6s">
+                        We are not building a community. We are initiating a council.
+                    </p>
+                    
+                    <div class="mt-16 text-reveal" style="animation-delay: 0.9s">
+                        <a href="https://chat.whatsapp.com/LgixCkRavW7LbhGMyX5HDb?mode=ac_t" class="relative sacred-border px-16 py-5 rounded-full text-sacred-gold font-serif text-xl group overflow-hidden transition-all duration-500 animate-pulse-slow">
+                            <span class="relative z-10">Enter the Inner Room</span>
+                            <span class="absolute inset-0 bg-gradient-to-r from-sacred-gold/10 to-sacred-crimson/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Page navigation
+        let currentPage = 'page-home';
+        let earthScene, candleScene, mirrorScene;
+        
+        function nextPage(pageId) {
+            // Animate out current page
+            document.getElementById(currentPage).classList.remove('active');
+            
+            // Animate in next page
+            setTimeout(() => {
+                document.getElementById(pageId).classList.add('active');
+                currentPage = pageId;
+                
+                // Initialize page-specific animations
+                initPageAnimations(pageId);
+            }, 1000);
+        }
+        
+        // Initialize 3D Earth
+        function init3DEarth() {
+            const container = document.getElementById('earth-container');
+            
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Earth
+            const geometry = new THREE.SphereGeometry(5, 64, 64);
+            const texture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+            const bumpMap = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+            const specularMap = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+            const material = new THREE.MeshPhongMaterial({
+                map: texture,
+                bumpMap: bumpMap,
+                bumpScale: 0.05,
+                specularMap: specularMap,
+                specular: new THREE.Color('grey'),
+                shininess: 5
+            });
+            const earth = new THREE.Mesh(geometry, material);
+            scene.add(earth);
+            
+            // Clouds
+            const cloudGeometry = new THREE.SphereGeometry(5.1, 64, 64);
+            const cloudTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+            const cloudMaterial = new THREE.MeshPhongMaterial({
+                map: cloudTexture,
+                transparent: true,
+                opacity: 0.4
+            });
+            const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+            scene.add(clouds);
+            
+            // Stars
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.1
+            });
+            
+            const starVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+            
+            // Camera position
+            camera.position.z = 10;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                earth.rotation.y += 0.001;
+                clouds.rotation.y += 0.0015;
+                renderer.render(scene, camera);
+            }
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            animate();
+            earthScene = { scene, camera, renderer, earth, clouds, stars };
+        }
+        
+        // Initialize 3D Candle
+        function init3DCandle() {
+            const container = document.getElementById('candle-container');
+            
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Candle base
+            const candleGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+            const candleMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xf8f4e6,
+                specular: 0x111111,
+                shininess: 30
+            });
+            const candle = new THREE.Mesh(candleGeometry, candleMaterial);
+            candle.position.y = -1;
+            scene.add(candle);
+            
+            // Wax drips
+            const waxDripGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            for (let i = 0; i < 10; i++) {
+                const drip = new THREE.Mesh(waxDripGeometry, candleMaterial);
+                drip.position.set(
+                    (Math.random() - 0.5) * 0.8,
+                    -1 + Math.random() * 0.5,
+                    (Math.random() - 0.5) * 0.8
+                );
+                drip.scale.y = Math.random() * 0.5 + 0.5;
+                scene.add(drip);
+            }
+            
+            // Flame
+            const flameGeometry = new THREE.ConeGeometry(0.2, 0.8, 32);
+            const flameMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffaa33,
+                transparent: true,
+                opacity: 0.8
+            });
+            const flame = new THREE.Mesh(flameGeometry, flameMaterial);
+            flame.position.y = 1.2;
+            scene.add(flame);
+            
+            // Flame glow
+            const flameLight = new THREE.PointLight(0xffaa33, 1, 5);
+            flameLight.position.y = 1.2;
+            scene.add(flameLight);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // Camera position
+            camera.position.z = 5;
+            camera.position.y = 0;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Flame flicker
+                const flicker = Math.random() * 0.1 + 0.95;
+                flame.scale.set(flicker, flicker, flicker);
+                flameLight.intensity = flicker;
+                
+                // Slight movement
+                flame.position.x = Math.sin(Date.now() * 0.001) * 0.05;
+                flame.position.z = Math.cos(Date.now() * 0.0013) * 0.05;
+                
+                renderer.render(scene, camera);
+            }
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            animate();
+            candleScene = { scene, camera, renderer, candle, flame };
+        }
+        
+        // Initialize Mirror Particles
+        function init3DMirror() {
+            const container = document.getElementById('mirror-container');
+            
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Create mirror particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            
+            const posArray = new Float32Array(particlesCount * 3);
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0xd4af37,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // Camera position
+            camera.position.z = 5;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.x += 0.0005;
+                particlesMesh.rotation.y += 0.001;
+                
+                renderer.render(scene, camera);
+            }
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            animate();
+            mirrorScene = { scene, camera, renderer, particlesMesh };
+        }
+        
+        // Initialize page-specific animations
+        function initPageAnimations(pageId) {
+            switch(pageId) {
+                case 'page-home':
+                    if (!earthScene) init3DEarth();
+                    break;
+                case 'page-story':
+                    if (!candleScene) init3DCandle();
+                    break;
+                case 'page-initiation':
+                    if (!mirrorScene) init3DMirror();
+                    break;
+            }
+        }
+        
+        // Form submission for gate page
+        document.getElementById('gate-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            nextPage('page-initiation');
+        });
+        
+        // Initialize first page animations
+        document.addEventListener('DOMContentLoaded', function() {
+            initPageAnimations(currentPage);
+            
+            // Animate text reveals on page load
+            const textReveals = document.querySelectorAll('.text-reveal');
+            textReveals.forEach((el, i) => {
+                const delay = el.style.animationDelay || '0s';
+                el.style.animationDelay = delay;
+                el.style.animation = 'text-reveal 1.5s forwards ' + delay;
+            });
+            
+            // Handle resize for all scenes
+            window.addEventListener('resize', () => {
+                if (earthScene) {
+                    earthScene.camera.aspect = window.innerWidth / window.innerHeight;
+                    earthScene.camera.updateProjectionMatrix();
+                    earthScene.renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+                if (candleScene) {
+                    candleScene.camera.aspect = window.innerWidth / window.innerHeight;
+                    candleScene.camera.updateProjectionMatrix();
+                    candleScene.renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+                if (mirrorScene) {
+                    mirrorScene.camera.aspect = window.innerWidth / window.innerHeight;
+                    mirrorScene.camera.updateProjectionMatrix();
+                    mirrorScene.renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
